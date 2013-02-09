@@ -72,7 +72,7 @@ If you don't configure any mappings, django-transfer and you are using
 server type ``'nginx'``, an ImproperlyConfigured exception will be raised.
 Mappings are ignored when the server type is not ``'nginx'``. Mappings allow
 absolute paths to be used in all instances, which allows unmodified code
-to work with any server type (event ``DEBUG`` mode, see below).
+to work with any server type (even ``settings.DEBUG`` mode, see below).
 
 Uploading
 ---------
@@ -109,10 +109,10 @@ You views can now handle regular or downstream uploads in the same fashion.
 Development / Debugging
 -----------------------
 
-When ``settings.DEBUG`` is True, ``TransferResponse`` will transfer the
+When ``settings.DEBUG`` is ``True``, ``TransferResponse`` will transfer the
 file directly this is suitable for use with the Django development server.
 The ``TransferUploadHandler`` always supports regular file uploads, so it
-will also function properly when ``settings.DEBUG`` is True.
+will also function properly when ``settings.DEBUG`` is ``True``.
 
 Non-ASCII File Names
 --------------------
