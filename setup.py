@@ -3,7 +3,7 @@
 import os
 from distutils.core import setup
 
-name = 'django-download'
+name = 'django-transfer'
 version = '0.1'
 release = '1'
 versrel = version + '-' + release
@@ -15,7 +15,7 @@ long_description = file(readme).read()
 setup(
     name = name,
     version = versrel,
-    description = 'A django application that provides file download methods.',
+    description = 'A django application that offloads file transfers to a downstream proxy.',
     long_description = long_description,
     author = 'Ben Timby',
     author_email = 'btimby@gmail.com',
@@ -26,7 +26,7 @@ setup(
     license = 'MIT',
     requires = [],
     packages = [
-        "django_download",
+        "django_transfer",
     ],
     classifiers = (
           'Development Status :: 4 - Beta',

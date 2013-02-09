@@ -8,89 +8,111 @@ Introduction
 ------------
 
 This is a simple Django application that encapsulates some methods for
-sending files to an HTTP client.
+sending and receiving files. This application helps with using mod_xsendfile
+(Apache), X-Accel-Redirect (nginx) and mod_upload (nginx).
 
-Why
----
+If your web application needs to allow users to upload or download files
+this will help you accelerate these tasks while retaining control over
+the process.
 
-Why is this needed? First of all, Django is not well-suited for serving
-up static files. You are well served by offloading this task to a server
-that is, Apache and Nginx are two that come to mind.
+Downloading
+-----------
 
-Also, sometimes you want to do something fancy like allow a user to
-download multiple files at once.
+Downloads are handled by the downstream web server (or proxy). However,
+the process is still controlled by the Django web application.
 
-Usage
------
+1. A client initiates a download (GET request).
+2. The downstream server forwards the request to Django.
+3. Django authenticates the user, or does other necessary processing.
+4. Django returns a TransferResponse.
+5. The TransferResponse instructs the downstream server to send the file.
 
-In all cases, you can pass a file-like object or a path. If you pass a file-
-like object, it MUST have a `name` or `filename` attribute. In the case of
-`offload()` that attribute MUST return the full path of the file. A file path
-will always work. For the `combine()` function, the `name` or `filename`
-attribute is used to name the file within the zip archive, therefore it can
-be a relative path or name (need not be valid).
+First you must configure django-transfer and let it know the details
+about your downstream server.
 
-A convenience wrapper `FilenameWrapper` is provided to allow you to use non-
-compliant file-like objects. You can use it to wrap the file-like object as
-follows::
+*Server type.*
 
-    from django_download import FilenameWrapper
+```python
+TRANSFER_SERVER = 'apache'  # or 'nginx' or 'lighttpd'
+```
 
-    def download_view(request):
-        f = StringIO()
-        f = FilenameWrapper('foobar.png', f)
-        ...
+You can always change the server type, and your code should continue
+to work.
 
-The mime type will be guessed for you if you don't provide it. This is, this
-is done using the `mimetypes.guess_type()` function. The mime type guessing is
-another reason the file-like object must provide a file name.
+*Mappings.*
 
-*Offloading*
+Apache and Lighttpd both accept absolute paths. Nowever, nginx requires
+that you configure internal locations, and return a path relative to
+one of those.
 
-You can offload the sending of a file to your webserver using the `offload()`
-function. This function will send a header to the server informing it that
-the response to the client should consist of a file's contents. This allows
-you to perform access checks in Django while actually sending the file via
-you web server::
+For example, if you configure:
 
-    from django_download import download
+```
+location /downloads {
+    internal;
+    alias /mnt/shared/downloads;
+}
+```
 
-    def download_view(request):
-        return download.offload(f,
-               headers={ 'Content-Disposition': 'attachment;' })
+When you serve the path '/downloads/foo/bar.png', nginx will transfer
+'/mnt/shared/downloads/foo/bar.png' to the client. You can configure
+your locations so that django-transfer can convert an absolute path
+to one that nginx can use to serve the file.
 
-This function works with Apache and Nginx using the X-SendFile and
-X-Accel-Redirect headers respectively. For Apache, you must have
-installed and configured mod_xsendfile.
+```python
+TRANSFER_MAPPINGS = (
+    ('/downloads', '/mnt/shared/downloads'),
+)
+```
 
-https://tn123.org/mod_xsendfile/
+If you don't configure any mappings, django-transfer will pass your
+path unmodified. If you configure mappings, it will attempt the
+conversion if the conversion fails, an ImproperlyConfigured
+exception will be raised. Mappings are ignored when the server type
+is not 'nginx'. You can change the server type, and everything
+should just work. With the proper mappings, absolute paths are
+handled properly, and for non-nginx servers, absolute paths are
+used directly.
 
-For Nginx you must have configured the path as outlined in the Nginx
-documentation.
+Uploading
+---------
 
-http://wiki.nginx.org/XSendfile
+Uploads are handled using a similar (but reversed) process. Nginx
+supports uploading with mod_upload. This is not part of the default
+server, so you must build nginx with support for uploading. If available
+the upload module will strip file contents from POST requests, save
+them to temporary files, and then forward those file names to your
+application.
 
-*Combining*
+1. A client initials an upload (POST reqest).
+2. The downstream server saves any file(s) to a holding area.
+3. The downstream server forwards the request (minus the file content) to
+Django.
+4. Django does any processing that is necessary, and returns a response.
+5. The downstream server relays the response to the client.
 
-If you want to combine multiple files into a single download (zipfile)
-you can do so using the `combine()` function::
+To handle downstream uploads in the same way you handle regular file
+uploads, you must install the TransferMiddleware. This middleware
+processes the request.POST data, identifying uploaded files and
+creates new entries in request.FILES to represent them.
 
-    from django_download import download
+```python
+MIDDLEWARE_CLASSES = (
+    ...
+    'django_transfer.middleware.TransferMiddleware',
+    ...
+)
+```
 
-    def download_view(request):
-        return download.combine(f1, f2,
-                         headers={ 'Content-Disposition': 'attachment' })
+You views can now handle regular or downstream uploads in the same fashion.
 
-This function will stream the archive to the client. Therefore, no Content-
-Length header is provided. If you wish to build the archive on the server
-before sending it to the client (so that the browser can estimate download
-time) you can do so by setting the `DOWNLOAD_ARCHIVE_PREPARE` setting to True
-or by sending the `prepare=True` keyword argument to `combine()`::
+Development / Debugging
+-----------------------
 
-    from django_download import download
-
-    def download_view(request):
-        return download.combine(f1, f2, prepare=True)
+When settings.DEBUG is True, TransferResponse will transfer the file directly
+this is suitable for use with the Django development server. The
+TransferUploadHandler always supports regular file uploads, so it will
+also function properly when settings.DEBUG is True.
 
 Non-ASCII File Names
 --------------------
