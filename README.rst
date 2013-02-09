@@ -32,9 +32,8 @@ about your downstream server.
 
 *Server type.*
 
-```python
-TRANSFER_SERVER = 'apache'  # or 'nginx' or 'lighttpd'
-```
+::
+    TRANSFER_SERVER = 'apache'  # or 'nginx' or 'lighttpd'
 
 You can always change the server type, and your code should continue
 to work.
@@ -47,23 +46,22 @@ one of those.
 
 For example, if you configure:
 
-```
-location /downloads {
-    internal;
-    alias /mnt/shared/downloads;
-}
-```
+::
+    location /downloads {
+        internal;
+        alias /mnt/shared/downloads;
+    }
+
 
 When you serve the path '/downloads/foo/bar.png', nginx will transfer
 '/mnt/shared/downloads/foo/bar.png' to the client. You can configure
 your locations so that django-transfer can convert an absolute path
 to one that nginx can use to serve the file.
 
-```python
-TRANSFER_MAPPINGS = (
-    ('/downloads', '/mnt/shared/downloads'),
-)
-```
+::
+    TRANSFER_MAPPINGS = (
+        ('/downloads', '/mnt/shared/downloads'),
+    )
 
 If you don't configure any mappings, django-transfer will pass your
 path unmodified. If you configure mappings, it will attempt the
@@ -96,13 +94,12 @@ uploads, you must install the TransferMiddleware. This middleware
 processes the request.POST data, identifying uploaded files and
 creates new entries in request.FILES to represent them.
 
-```python
-MIDDLEWARE_CLASSES = (
-    ...
-    'django_transfer.middleware.TransferMiddleware',
-    ...
-)
-```
+::
+    MIDDLEWARE_CLASSES = (
+        ...
+        'django_transfer.middleware.TransferMiddleware',
+        ...
+    )
 
 You views can now handle regular or downstream uploads in the same fashion.
 
