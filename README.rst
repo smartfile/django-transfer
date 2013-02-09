@@ -25,8 +25,8 @@ the process is still controlled by the Django web application.
 1. A client initiates a download (GET request).
 2. The downstream server forwards the request to Django.
 3. Django authenticates the user, or does other necessary processing.
-4. Django returns a TransferResponse.
-5. The TransferResponse instructs the downstream server to send the file.
+4. Django returns a ``TransferResponse``.
+5. The ``TransferResponse`` instructs the downstream server to send the file.
 
 First you must configure django-transfer and let it know the details
 about your downstream server.
@@ -56,10 +56,11 @@ For example, if you configure:
     }
 
 
-When you serve the path '/downloads/foo/bar.png', nginx will transfer
-'/mnt/shared/downloads/foo/bar.png' to the client. You can configure
-your locations so that django-transfer can convert an absolute path
-to one that nginx can use to serve the file.
+When you serve the path ``'/downloads/foo/bar.png'``, nginx will transfer
+``'/mnt/shared/downloads/foo/bar.png'`` to the client. If you configure
+mappings for nginx, django-transfer can convert an absolute path
+to one that nginx can use to serve the file. This is important as it
+allows your code to use absolute paths in any case.
 
 ::
 
@@ -67,14 +68,11 @@ to one that nginx can use to serve the file.
         ('/downloads', '/mnt/shared/downloads'),
     )
 
-If you don't configure any mappings, django-transfer will pass your
-path unmodified. If you configure mappings, it will attempt the
-conversion if the conversion fails, an ImproperlyConfigured
-exception will be raised. Mappings are ignored when the server type
-is not 'nginx'. You can change the server type, and everything
-should just work. With the proper mappings, absolute paths are
-handled properly, and for non-nginx servers, absolute paths are
-used directly.
+If you don't configure any mappings, django-transfer and you are using
+server type ``'nginx'``, an ImproperlyConfigured exception will be raised.
+Mappings are ignored when the server type is not ``'nginx'``. Mappings allow
+absolute paths to be used in all instances, which allows unmodified code
+to work with any server type (event ``DEBUG`` mode, see below).
 
 Uploading
 ---------
@@ -89,14 +87,14 @@ application.
 1. A client initials an upload (POST reqest).
 2. The downstream server saves any file(s) to a holding area.
 3. The downstream server forwards the request (minus the file content) to
-Django.
+   Django.
 4. Django does any processing that is necessary, and returns a response.
 5. The downstream server relays the response to the client.
 
 To handle downstream uploads in the same way you handle regular file
-uploads, you must install the TransferMiddleware. This middleware
-processes the request.POST data, identifying uploaded files and
-creates new entries in request.FILES to represent them.
+uploads, you must install the ``TransferMiddleware``. This middleware
+processes the ``request.POST`` data, identifying uploaded files and
+creates new entries in ``request.FILES`` to represent them.
 
 ::
 
@@ -111,10 +109,10 @@ You views can now handle regular or downstream uploads in the same fashion.
 Development / Debugging
 -----------------------
 
-When settings.DEBUG is True, TransferResponse will transfer the file directly
-this is suitable for use with the Django development server. The
-TransferUploadHandler always supports regular file uploads, so it will
-also function properly when settings.DEBUG is True.
+When ``settings.DEBUG`` is True, ``TransferResponse`` will transfer the
+file directly this is suitable for use with the Django development server.
+The ``TransferUploadHandler`` always supports regular file uploads, so it
+will also function properly when ``settings.DEBUG`` is True.
 
 Non-ASCII File Names
 --------------------
