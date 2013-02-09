@@ -8,8 +8,9 @@ Introduction
 ------------
 
 This is a simple Django application that encapsulates some methods for
-sending and receiving files. This application helps with using mod_xsendfile
-(Apache), X-Accel-Redirect (nginx) and mod_upload (nginx).
+sending and receiving files. This application helps with using
+`mod_xsendfile`_ (Apache), `X-Accel-Redirect`_ (nginx), `X-SendFile`_ 
+(lighttpd) and `mod_upload`_ (nginx).
 
 If your web application needs to allow users to upload or download files
 this will help you accelerate these tasks while retaining control over
@@ -79,7 +80,7 @@ Uploading
 ---------
 
 Uploads are handled using a similar (but reversed) process. Nginx
-supports uploading with mod_upload. This is not part of the default
+supports uploading with `mod_upload`_. This is not part of the default
 server, so you must build nginx with support for uploading. If available
 the upload module will strip file contents from POST requests, save
 them to temporary files, and then forward those file names to your
@@ -148,11 +149,10 @@ populated in the "Save As" dialog. You can force the issue (saving vs.
 rendering) by including a Content-Disposition header with the value
 "attachment;" excluding the (unsafe) filename.
 
-Configuration
--------------
-
-If you are using Apache or Nginx, you will need to configure some settings
-to allow the offload() method to function.
-
 .. _SmartFile: http://www.smartfile.com/
 .. _Read more: http://www.smartfile.com/open-source.html
+.. _Read more: http://www.smartfile.com/open-source.html
+.. _mod_xsendfile: https://tn123.org/mod_xsendfile/
+.. _X-Accel-Redirect: http://wiki.nginx.org/XSendfile
+.. _X-SendFile: http://redmine.lighttpd.net/projects/1/wiki/Docs_ModFastCGI#X-Sendfile
+.. _mod_upload: http://wiki.nginx.org/HttpUploadModule
