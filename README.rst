@@ -33,6 +33,7 @@ about your downstream server.
 *Server type.*
 
 ::
+
     TRANSFER_SERVER = 'apache'  # or 'nginx' or 'lighttpd'
 
 You can always change the server type, and your code should continue
@@ -47,6 +48,7 @@ one of those.
 For example, if you configure:
 
 ::
+
     location /downloads {
         internal;
         alias /mnt/shared/downloads;
@@ -59,6 +61,7 @@ your locations so that django-transfer can convert an absolute path
 to one that nginx can use to serve the file.
 
 ::
+
     TRANSFER_MAPPINGS = (
         ('/downloads', '/mnt/shared/downloads'),
     )
@@ -95,6 +98,7 @@ processes the request.POST data, identifying uploaded files and
 creates new entries in request.FILES to represent them.
 
 ::
+
     MIDDLEWARE_CLASSES = (
         ...
         'django_transfer.middleware.TransferMiddleware',
@@ -149,7 +153,6 @@ Configuration
 
 If you are using Apache or Nginx, you will need to configure some settings
 to allow the offload() method to function.
-
 
 .. _SmartFile: http://www.smartfile.com/
 .. _Read more: http://www.smartfile.com/open-source.html
