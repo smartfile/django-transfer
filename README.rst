@@ -7,44 +7,83 @@ uses and contributes to Open Source software.
 Introduction
 ------------
 
-This is a simple Django application that encapsulates some methods for
-sending and receiving files. This application helps with using
-`mod_xsendfile`_ (Apache), `X-Accel-Redirect`_ (nginx), `X-SendFile`_ 
-(lighttpd) and `mod_upload`_ (nginx).
+The Django project recommends serving static files from a different web
+server than the one executing the web application. This is easy to implement
+when the static files are web assets. These resources can be served to any
+anonymous user and can easily be cached. However, in some cases, an
+application must control access to files, or even allow users to upload
+files. In these cases, there is a need to tightly control the process,
+which runs contrary to the Django project's reccommendations.
 
-If your web application needs to allow users to upload or download files
-this will help you accelerate these tasks while retaining control over
-the process.
+Luckily, there are a few tools available that allow removing downloads
+and even uploads from the application server, while still allowing it
+to control the process. This Django application is meant to help
+integrate with such tools, so that your web application can hand off
+file transfers to a downstream proxy server, which is better equipped
+to handle this task, freeing up the application server for the heavy
+lifting.
+
+django-transfer integrates with:
+
+- `mod_xsendfile`_ for Apache
+- `X-Accel-Redirect`_ for Nginx
+- `X-SendFile`_ header in Lighttpd
+- `mod_upload`_ for Nginx
+
+The first three of the above allow the web application to emit a header
+instructing the server to transfer a file to the HTTP client. This way,
+the web app still receives the download request, can perform any checks
+required, and can send a header instead of the actual file contents.
+
+The last, `mod_upload`_ does something similar, but for file UPLOADS.
+mod_upload will receive files POSTed to the server, and save them off
+to temporary files. Then it will forward the request to the web
+application, replacing the file bodies with paths to the temporary files
+containing them.
+
+`mod_upload`_ is better than simply buffering the upload because the file
+bodies are NEVER handled by the application server. In fact, if you can
+write the temporary files to a holding area that exists on the same volume
+as their final location, a simple move is all that is required to finish
+the upload.
 
 Downloading
 -----------
 
-Downloads are handled by the downstream web server (or proxy). However,
-the process is still controlled by the Django web application.
+django-transfer provides an HttpResponse subclass that handles downloads
+triggered via response header. The actual header and format is handled by
+this class. TransferHttpResponse accepts a path, and handles the transfer.
+When ``settings.DEBUG == True`` the path is sent directly to the client,
+this allows the Django development server to function as normal without
+changing your application code.
+
+The timeline of events for a download looks like the following.
 
 1. A client initiates a download (GET request).
 2. The downstream server forwards the request to Django.
-3. Django authenticates the user, or does other necessary processing.
-4. Django returns a ``TransferResponse``.
-5. The ``TransferResponse`` instructs the downstream server to send the file.
+3. Django application authenticates the user, does other necessary
+   processing.
+4. Django application returns a ``TransferHttpResponse``.
+5. The ``TransferHttpResponse`` emits a header instructing the downstream
+   server to transfer a file to the client.
 
 First you must configure django-transfer and let it know the details
 about your downstream server.
 
-*Server type.*
+*Server Types*
 
 ::
 
     TRANSFER_SERVER = 'apache'  # or 'nginx' or 'lighttpd'
 
-You can always change the server type, and your code should continue
-to work.
+You can change the server type and TransferHttpResponse will use the
+correct header(s) for the configured server.
 
-*Mappings.*
+*Nginx Mappings*
 
-Apache and Lighttpd both accept absolute paths. Nowever, nginx requires
-that you configure internal locations, and return a path relative to
-one of those.
+Nginx has support for the X-Accel-Redirect header built in. However, it
+does not accept arbitrary paths for transfer. Nginx requires that you
+configure internal locations, and return a path relative to one of those.
 
 For example, if you configure:
 
@@ -55,24 +94,49 @@ For example, if you configure:
         alias /mnt/shared/downloads;
     }
 
+When nginx receives the header ``X-Accel-Redirect: /downloads/foo/bar.png``
+it will transfer ``'/mnt/shared/downloads/foo/bar.png'`` to the client.
 
-When you serve the path ``'/downloads/foo/bar.png'``, nginx will transfer
-``'/mnt/shared/downloads/foo/bar.png'`` to the client. If you configure
-mappings for nginx, django-transfer can convert an absolute path
-to one that nginx can use to serve the file. This is important as it
-allows your code to use absolute paths in any case.
+django-transfer needs to know about such locations. You can inform it of
+them by configuring the mappings.
 
 ::
 
-    TRANSFER_MAPPINGS = (
-        ('/downloads', '/mnt/shared/downloads'),
-    )
+    TRANSFER_MAPPINGS = {
+        '/mnt/shared/downloads': '/downloads',
+    }
 
-If you don't configure any mappings, django-transfer and you are using
-server type ``'nginx'``, an ImproperlyConfigured exception will be raised.
-Mappings are ignored when the server type is not ``'nginx'``. Mappings allow
-absolute paths to be used in all instances, which allows unmodified code
-to work with any server type (even ``settings.DEBUG`` mode, see below).
+Once the mapping is configured, you can use absolute paths, which will
+be converted to the locations required by nginx. If you later switch to
+a different server (apache or lighttpd) these absolute paths will continue
+to function without changing your code. Similarly, when ``settings.DEBUG ==
+True`` absolute paths will be required so that the development server can
+send the file directly.
+
+If you don't configure any mappings, and you are using server type
+``'nginx'``, an ImproperlyConfigured exception will be raised. Mappings
+are ignored when the server type is not ``'nginx'``.
+
+*Apache Configuration*
+
+Apache requires a module to be installed in order to use the X-Sendfile
+header. Once installed, this module must be enabled, and you must define
+the locations that allow downloads. Much like Nginx, Apache will not
+serve arbitrary paths, only those specifically configured.
+
+::
+
+    XSendFile On
+    XSendFilePath /mnt/shared/downloads
+
+When apache receives the header ``X-SendFile: /mnt/shared/downloads/foo/bar.png``
+It will transfer ``'/mnt/shared/downloads/foo/bar.png'`` to the client.
+django-transfer will pass along absolute paths when the server type is
+``'apache'``.
+
+*Lighttpd Configuration*
+
+TODO: I have never used lighttpd, but I know it supports this.
 
 Uploading
 ---------
@@ -94,13 +158,13 @@ application.
 To handle downstream uploads in the same way you handle regular file
 uploads, you must install the ``TransferMiddleware``. This middleware
 processes the ``request.POST`` data, identifying uploaded files and
-creates new entries in ``request.FILES`` to represent them.
+creating new entries in ``request.FILES`` to represent them.
 
 ::
 
     MIDDLEWARE_CLASSES = (
         ...
-        'django_transfer.middleware.TransferMiddleware',
+        'django_transfer.offload.TransferMiddleware',
         ...
     )
 
@@ -134,7 +198,7 @@ generally add a regular expression to urls.py that ignores the file name.
 The file name is there only for the benefit of the browser, and is not
 used by the Django view. Thus::
 
-    url('/download/.*', 'myapp.views.download'),
+    url('^/download/.*', 'myapp.views.download'),
 
 Will allow an optional trailing file name for our purposes. You then must
 ensure that any links to your download view include the file name, like so::
