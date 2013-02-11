@@ -13,7 +13,7 @@ when the static files are web assets. These resources can be served to any
 anonymous user and can easily be cached. However, in some cases, an
 application must control access to files, or even allow users to upload
 files. In these cases, there is a need to tightly control the process,
-which runs contrary to the Django project's reccommendations.
+which runs contrary to the Django project's recommendations.
 
 Luckily, there are a few tools available that allow removing downloads
 and even uploads from the application server, while still allowing it
@@ -31,13 +31,13 @@ django-transfer integrates with:
 - `mod_upload`_ for Nginx
 
 The first three of the above allow the web application to emit a header
-instructing the server to transfer a file to the HTTP client. This way,
-the web app still receives the download request, can perform any checks
-required, and can send a header instead of the actual file contents.
+instructing the content server  to transfer a file to the HTTP client.
+This way, the web app still receives the download request, performs any
+checks required, and sends a header instead of the actual file contents.
 
 The last, `mod_upload`_ does something similar, but for file UPLOADS.
-mod_upload will receive files POSTed to the server, and save them off
-to temporary files. Then it will forward the request to the web
+mod_upload will receive files POSTed to the server and save them off
+to temporary files. It will the forward the request to the web
 application, replacing the file bodies with paths to the temporary files
 containing them.
 
@@ -51,7 +51,7 @@ Downloading
 -----------
 
 django-transfer provides an HttpResponse subclass that handles downloads
-triggered via response header. The actual header and format is handled by
+triggered via response header. The actual header and format are handled by
 this class. TransferHttpResponse accepts a path, and handles the transfer.
 When ``settings.DEBUG == True`` the path is sent directly to the client,
 this allows the Django development server to function as normal without
@@ -61,7 +61,7 @@ The timeline of events for a download looks like the following.
 
 1. A client initiates a download (GET request).
 2. The downstream server forwards the request to Django.
-3. Django application authenticates the user, does other necessary
+3. Django application authenticates the user and does other necessary
    processing.
 4. Django application returns a ``TransferHttpResponse``.
 5. The ``TransferHttpResponse`` emits a header instructing the downstream
@@ -108,12 +108,12 @@ them by configuring the mappings.
 
 Once the mapping is configured, you can use absolute paths, which will
 be converted to the locations required by nginx. If you later switch to
-a different server (apache or lighttpd) these absolute paths will continue
+a different server (apache or lighttpd), these absolute paths will continue
 to function without changing your code. Similarly, when ``settings.DEBUG ==
-True`` absolute paths will be required so that the development server can
+True``, absolute paths will be required so that the development server can
 send the file directly.
 
-If you don't configure any mappings, and you are using server type
+If you do not configure any mappings, and you are using server type
 ``'nginx'``, an ImproperlyConfigured exception will be raised. Mappings
 are ignored when the server type is not ``'nginx'``.
 
@@ -143,16 +143,16 @@ Uploading
 
 Uploads are handled using a similar (but reversed) process. Nginx
 supports uploading with `mod_upload`_. This is not part of the default
-server, so you must build nginx with support for uploading. If available
+server, so you must build nginx with support for uploading. If available,
 the upload module will strip file contents from POST requests, save
-them to temporary files, and then forward those file names to your
+them to temporary files and then forward those file names to your
 application.
 
-1. A client initials an upload (POST reqest).
+1. A client initiates an upload (POST reqest).
 2. The downstream server saves any file(s) to a holding area.
 3. The downstream server forwards the request (minus the file content) to
    Django.
-4. Django does any processing that is necessary, and returns a response.
+4. Django does any processing that is necessary and returns a response.
 5. The downstream server relays the response to the client.
 
 To handle downstream uploads in the same way you handle regular file
@@ -173,10 +173,10 @@ You views can now handle regular or downstream uploads in the same fashion.
 Development / Debugging
 -----------------------
 
-When ``settings.DEBUG`` is ``True``, ``TransferResponse`` will transfer the
-file directly this is suitable for use with the Django development server.
-The ``TransferUploadHandler`` always supports regular file uploads, so it
-will also function properly when ``settings.DEBUG`` is ``True``.
+When ``settings.DEBUG == True``, ``TransferHttpResponse`` will transfer the
+file directly which suitable for use with the Django development server.
+The ``TransferMiddleware`` always supports regular file uploads, so it
+will also function properly when ``settings.DEBUG == True``.
 
 Non-ASCII File Names
 --------------------
@@ -186,12 +186,12 @@ quick note on this topic might save you some headache.
 
 A common practice is to include a Content-Disposition header that
 includes the file name. This breaks when the filename contains non-ASCII
-characters (UTF8 etc). Specifically, Django will raise an exception when
-you try to set the header. HTTP specification states that headers must
+characters (UTF-8 etc). Specifically, Django will raise an exception when
+you try to set the header. The HTTP specification states that headers must
 contain only ASCII.
 
-The best workaroud I have found for this is to include the file name in
-the URL. It must be the last element of the URL. All browser I know of
+The best workaround I have found for this is to include the file name in
+the URL. It must be the last element of the URL. All browsers I know of
 will use this file name in the "Save As" dialog. Since a URL can contain
 any character, this works around the issue. To implement this, I
 generally add a regular expression to urls.py that ignores the file name.
@@ -200,16 +200,16 @@ used by the Django view. Thus::
 
     url('^/download/.*', 'myapp.views.download'),
 
-Will allow an optional trailing file name for our purposes. You then must
+will allow an optional trailing file name for our purposes. You then must
 ensure that any links to your download view include the file name, like so::
 
     http://myapp.com/download/desired_filename.png
 
-When the user clicks that link, if you send file contents, and the browser
-decides to save them rather than render them, the filename will be
-populated in the "Save As" dialog. You can force the issue (saving vs.
-rendering) by including a Content-Disposition header with the value
-"attachment;" excluding the (unsafe) filename.
+When the user clicks that link and the application sends file contents, the
+browser will obtain the file name from the URL. The browser may decide to
+render or save the file. You can force the issue (saving vs. rendering) by
+including a Content-Disposition header with the value "attachment;"
+excluding the (unsafe) filename.
 
 .. _SmartFile: http://www.smartfile.com/
 .. _Read more: http://www.smartfile.com/open-source.html
