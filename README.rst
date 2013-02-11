@@ -164,11 +164,68 @@ creating new entries in ``request.FILES`` to represent them.
 
     MIDDLEWARE_CLASSES = (
         ...
-        'django_transfer.offload.TransferMiddleware',
+        'django_transfer.TransferMiddleware',
         ...
     )
 
-You views can now handle regular or downstream uploads in the same fashion.
+Nginx requires a bit of configuration to make this possible. Below is a
+sample configuration.
+
+::
+
+    location /upload {
+        upload_pass @application;
+
+        # The path below must exist, so must subdirectories named 0-9
+        # $ mkdir -p /mnt/shared/uploads/{0-9}
+        upload_store /mnt/shared/uploads 1;
+        upload_store_access user:r;
+
+        # You can limit file size here...
+        upload_max_file_size 0;
+
+        # These are the MINIMUM fields required by django-transfer.
+        # mod_upload will replace $upload_field_name with the name of the file
+        # field. If there are multiple files, your web application will receive
+        # a set of filename/paths for each.
+        upload_set_form_field $upload_field_name[filename] "$upload_file_name";
+        upload_set_form_field $upload_field_name[path] "$upload_tmp_path";
+
+        # You can also pass along the following fields, otherwise
+        # django-transfer will attempt to "figure out" these values on it's
+        # own.
+        upload_set_form_field $upload_field_name[content_type] "$upload_content_type";
+        upload_aggregate_form_field $upload_field_name[size] "$upload_file_size";
+
+        # If you want to receive non-file fields provide the following, note
+        # that if nginx supports it, this can be a regular expression. If not
+        # you can define allowed fields separately, by providing this argument
+        # multiple times.
+        upload_pass_form_field ".*";
+
+        # If you want to receive querystring arguments...
+        upload_pass_args on;
+    }
+
+    location / {
+        # ... proxy-pass or FCGI directives here ...
+        # This is where requests to URLs other than /upload go.
+    }
+
+    location @application {
+        # ... proxy-pass or FCGI directives here ...
+        # This is where to pass upload requests, most frequently, it will be
+        # the same as the previous location.
+    }
+
+For more information on how to install and configure mod_upload, see the
+following pages, I found them useful while implementing this.
+
+http://www.grid.net.ru/nginx/upload.en.html
+http://blog.joshsoftware.com/2010/10/20/uploading-multiple-files-with-nginx-upload-module-and-upload-progress-bar/
+http://bclennox.com/extremely-large-file-uploads-with-nginx-passenger-rails-and-jquery
+
+Your views can now handle regular or downstream uploads in the same fashion.
 
 Development / Debugging
 -----------------------
