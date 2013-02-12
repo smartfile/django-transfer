@@ -125,7 +125,6 @@ class NginxTestCase(DownloadTestCase, ServerTestCase):
         }
         r = self.getClient().post('/upload/', data)
         r = json.loads(r.content)
-        print r
         self.assertIn('file', r)
         self.assertEqual(os.getpid(), int(r['file']['data']))
 
