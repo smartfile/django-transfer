@@ -125,12 +125,19 @@ class NginxTestCase(DownloadTestCase, ServerTestCase):
         }
         r = self.getClient().post('/upload/', data)
         r = json.loads(r.content)
+        print r
         self.assertIn('file', r)
+        self.assertEqual(os.getpid(), int(r['file']['data']))
 
     def test_upload_proxy(self):
+        fd, t = tempfile.mkstemp()
+        os.write(fd, str(os.getpid()))
+        os.close(fd)
         data = {
-            'file[name]': '',
+            'file[filename]': 'foobar.png',
+            'file[path]': t,
         }
         r = self.getClient().post('/upload/', data)
         r = json.loads(r.content)
         self.assertIn('file', r)
+        self.assertEqual(os.getpid(), int(r['file']['data']))

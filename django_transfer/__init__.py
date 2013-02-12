@@ -50,7 +50,6 @@ def get_header_value(path):
                 break
         if not found:
             raise ImproperlyConfigured('Cannot map path "%s"' % path)
-    # Can't use non-ASCII chars in headers.
     return quote(path.encode('utf-8'))
 
 
@@ -81,5 +80,29 @@ class TransferMiddleware(object):
         if request.method != 'POST':
             return
         # Find uploads in request.POST and copy them to request.FILES.
+        fields = set()
         for name in request.POST.keys():
-            n, ignored = name.split('[', 1)
+            field, attr = name.split('[', 1)
+            if attr in ('filename]', 'path]', 'size]', 'content_type]'):
+                fields.add(field)
+        if fields:
+            request.POST._mutable, request.FILES._mutable = True, True
+            for field in fields:
+                # Get required fields.
+                try:
+                    name = request.POST.pop('%s[filename]' % field)[0]
+                    temp = request.POST.pop('%s[path]' % field)[0]
+                except KeyError:
+                    raise Exception('Missing required field "%s", please '
+                                    'configure mod_upload properly')
+                # Get optional fields.
+                try:
+                    content_type = int(request.POST.pop('%s[content_type]' % field))[0]
+                except (KeyError, ValueError):
+                    content_type = mimetypes.guess_type(name)[0]
+                try:
+                    size = int(request.POST.pop('%s[size]' % field))[0]
+                except (KeyError, ValueError):
+                    size = os.path.getsize(temp)
+                request.FILES[field] = ProxyUploadedFile(temp, name, content_type, size)
+            request.POST._mutable, request.FILES._mutable = False, False

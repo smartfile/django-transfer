@@ -19,8 +19,10 @@ def upload(request):
     if request.method == 'POST':
         for name, file in request.FILES.items():
             uploads[name] = {
+                'path': file.name,
                 'size': file.size,
                 'content-type': file.content_type,
+                'data': file.read(),
             }
     response = HttpResponse(json.dumps(uploads))
     return response
