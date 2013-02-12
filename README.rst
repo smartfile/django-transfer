@@ -1,5 +1,5 @@
 .. figure:: https://travis-ci.org/smartfile/django-transfer.png
-   :alt: Travis Status
+   :alt: Travis CI Status
    :target: https://travis-ci.org/smartfile/django-transfer
 
 A `SmartFile`_ Open Source project. `Read more`_ about how SmartFile
