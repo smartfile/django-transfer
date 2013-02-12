@@ -125,7 +125,7 @@ class TransferMiddleware(object):
                     name = request.POST.pop('%s[filename]' % field)[0]
                     temp = request.POST.pop('%s[path]' % field)[0]
                 except KeyError:
-                    raise Exception('Missing required field "%s", please '
+                    raise Exception('Missing required field "%s", please ' +
                                     'configure mod_upload properly')
                 # Get optional fields. If these are missing, we will try to
                 # determine the value from the temporary file.
