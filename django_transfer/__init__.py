@@ -28,12 +28,20 @@ def get_server_name():
 
 
 def get_header_name():
+    server_name = get_server_name()
     try:
-        server_name = get_server_name()
+        return SERVER_HEADERS[server_name]
     except KeyError:
         raise ImproperlyConfigured('Invalid server name "%s" for '
                                    'settings.TRANSFER_SERVER' % server_name)
-    return SERVER_HEADERS[server_name]
+
+
+def is_enabled():
+    if settings.DEBUG:
+        return False
+    if getattr(settings, 'TRANSFER_SERVER', None) is None:
+        return False
+    return True
 
 
 def get_header_value(path):
@@ -61,13 +69,14 @@ class TransferHttpResponse(HttpResponse):
             content_type = mimetype
         if content_type is None:
             content_type = mimetypes.guess_type(path)[0]
-        if not settings.DEBUG:
+        enabled = is_enabled()
+        if enabled:
             content = ''
         else:
             content = file(path, 'r')
         super(TransferHttpResponse, self).__init__(content, status=status,
                                                    content_type=content_type)
-        if not settings.DEBUG:
+        if enabled:
             self[get_header_name()] = get_header_value(path)
 
 
@@ -79,6 +88,10 @@ class ProxyUploadedFile(UploadedFile):
 class TransferMiddleware(object):
     def process_request(self, request):
         if request.method != 'POST':
+            return
+        if not is_enabled():
+            return
+        if get_server_name() != SERVER_NGINX:
             return
         # Find uploads in request.POST and copy them to request.FILES.
         fields = set()
