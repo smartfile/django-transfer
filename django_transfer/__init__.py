@@ -64,7 +64,7 @@ class TransferHttpResponse(HttpResponse):
             content = ''
         else:
             content = file(path, 'r')
-        super(TransferHttpResponse, self).__init__(content,  status=status,
+        super(TransferHttpResponse, self).__init__(content, status=status,
                                                    content_type=content_type)
         if not settings.DEBUG:
             self[get_header_name()] = get_header_value(path)
