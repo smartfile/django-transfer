@@ -24,5 +24,5 @@ def upload(request):
                 'content-type': file.content_type,
                 'data': file.read(),
             }
-    response = HttpResponse(json.dumps(uploads))
+    response = HttpResponse(json.dumps(uploads), content_type='application/json')
     return response
