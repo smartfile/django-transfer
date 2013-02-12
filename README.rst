@@ -1,11 +1,11 @@
+.. figure:: https://travis-ci.org/smartfile/django-transfer.png
+   :alt: Travis Status
+
 A `SmartFile`_ Open Source project. `Read more`_ about how SmartFile
 uses and contributes to Open Source software.
 
 .. figure:: http://www.smartfile.com/images/logo.jpg
    :alt: SmartFile
-
-.. figure:: https://travis-ci.org/smartfile/django-transfer.png
-   :alt: Travis Status
 
 Introduction
 ------------
