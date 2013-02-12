@@ -11,7 +11,7 @@ install:
   - pip install https://github.com/dcramer/pyflakes/tarball/master
   - pip install -q -e . --use-mirrors
 before_script:
-  - "pep8 --exclude=migrations --ignore=E501,E225 src"
-  - pyflakes -x W src
+  - "pep8 --exclude=migrations --ignore=E501,E225 django_transfer"
+  - pyflakes -x W django_transfer
 script:
   - python setup.py test django_transfer
