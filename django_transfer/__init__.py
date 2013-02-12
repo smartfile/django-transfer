@@ -103,30 +103,46 @@ class TransferMiddleware(object):
             return
         if get_server_name() != SERVER_NGINX:
             return
-        # Find uploads in request.POST and copy them to request.FILES.
+        # Find uploads in request.POST and copy them to request.FILES. Such
+        # fields are expected to be named as:
+        # __original_field_name__[__attribute__]
+        # We will build a unique list of the __original_field_name__'s we find
+        # that contain a valid __attribute__ name.
         fields = set()
         for name in request.POST.keys():
             field, attr = name.split('[', 1)
             if attr in ('filename]', 'path]', 'size]', 'content_type]'):
                 fields.add(field)
+        # If we found any field names that match the expected naming scheme, we
+        # can now loop through the names, and try to extract the attributes.
+        # The original fields will be pop()ed off request.POST, to clean up.
         if fields:
+            # We will be modifying these objects, so make them mutable.
             request.POST._mutable, request.FILES._mutable = True, True
             for field in fields:
-                # Get required fields.
+                # Get required fields. If these are missing, we will fail.
                 try:
                     name = request.POST.pop('%s[filename]' % field)[0]
                     temp = request.POST.pop('%s[path]' % field)[0]
                 except KeyError:
                     raise Exception('Missing required field "%s", please '
                                     'configure mod_upload properly')
-                # Get optional fields.
+                # Get optional fields. If these are missing, we will try to
+                # determine the value from the temporary file.
                 try:
-                    content_type = int(request.POST.pop('%s[content_type]' % field))[0]
+                    content_type = int(
+                        request.POST.pop('%s[content_type]' % field))[0]
                 except (KeyError, ValueError):
                     content_type = mimetypes.guess_type(name)[0]
                 try:
                     size = int(request.POST.pop('%s[size]' % field))[0]
                 except (KeyError, ValueError):
                     size = os.path.getsize(temp)
-                request.FILES[field] = ProxyUploadedFile(temp, name, content_type, size)
+                # Now add a new UploadedFile object so that the web application
+                # can handle these "files" that were uploaded in the same
+                # fashion as a regular file upload.
+                request.FILES[field] = ProxyUploadedFile(temp, name,
+                    content_type, size)
+            # We are done modifying these objects, make them immutable once
+            # again.
             request.POST._mutable, request.FILES._mutable = False, False
