@@ -125,7 +125,7 @@ class TransferMiddleware(object):
                     name = request.POST.pop('%s[filename]' % field)[0]
                     temp = request.POST.pop('%s[path]' % field)[0]
                 except KeyError:
-                    raise Exception('Missing required field "%s", please ' +
+                    raise Exception('Missing required field "%s", please '
                                     'configure mod_upload properly')
                 # Get optional fields. If these are missing, we will try to
                 # determine the value from the temporary file.
@@ -142,7 +142,7 @@ class TransferMiddleware(object):
                 # can handle these "files" that were uploaded in the same
                 # fashion as a regular file upload.
                 request.FILES[field] = ProxyUploadedFile(temp, name,
-                    content_type, size)
+                                                         content_type, size)
             # We are done modifying these objects, make them immutable once
             # again.
             request.POST._mutable, request.FILES._mutable = False, False
