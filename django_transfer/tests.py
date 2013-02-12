@@ -66,6 +66,10 @@ class ServerTestCase(TestCase):
         super(ServerTestCase, self).setUp()
         self.header_name = SERVER_HEADERS.get(self.transfer_server)
 
+    def assertIn(self, value, iterable):
+        self.assertTrue(value in iterable, '%s did not occur in %s' % (value,
+                        iterable))
+
     def getClient(self):
         return Client()
 
