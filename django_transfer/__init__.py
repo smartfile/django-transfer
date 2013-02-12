@@ -71,18 +71,27 @@ class TransferHttpResponse(HttpResponse):
             content_type = mimetypes.guess_type(path)[0]
         enabled = is_enabled()
         if enabled:
+            # Don't send content, we will instead send a header.
             content = ''
         else:
+            # Fall back to sending file contents via Django HttpResponse.
             content = file(path, 'r')
         super(TransferHttpResponse, self).__init__(content, status=status,
                                                    content_type=content_type)
         if enabled:
+            # Now that the superclass is initialized, we can add our header.
             self[get_header_name()] = get_header_value(path)
 
 
 class ProxyUploadedFile(UploadedFile):
     def __init__(self, path, name, content_type, size):
+        self.path = path
         super(ProxyUploadedFile, self).__init__(file(path, 'r'), name, content_type, size)
+
+    def move(self, dst):
+        "Closes then moves the file to dst."
+        self.close()
+        shutil.move(self.path, dst)
 
 
 class TransferMiddleware(object):

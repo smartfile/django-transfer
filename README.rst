@@ -49,7 +49,8 @@ containing them.
 bodies are NEVER handled by the application server. In fact, if you can
 write the temporary files to a holding area that exists on the same volume
 as their final location, a simple move is all that is required to finish
-the upload.
+the upload. In fact, the ``ProxyUploadedFile`` class (contained in
+``request.FILES`` has a convenience ``move()`` method.
 
 Downloading
 -----------
