@@ -1,4 +1,7 @@
-from django.conf.urls import patterns, include, url
+try:
+    from django.conf.urls import patterns, include, url
+except ImportError:
+    from django.conf.urls.default import patterns, include, url
 
 
 urlpatterns = patterns(
