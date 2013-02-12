@@ -22,6 +22,14 @@ MULTIPART = 'multipart/form-data'
 # and manage changing the settings on THAT.
 
 
+def make_tempfile():
+    "Create a temp file, write our PID into it."
+    fd, t = tempfile.mkstemp()
+    os.write(fd, str(os.getpid()))
+    os.close(fd)
+    return t
+
+
 class Settings(object):
     "Context manager that overrides settings, then restores them."
     class Missing(object):
@@ -58,36 +66,71 @@ class ServerTestCase(TestCase):
         super(ServerTestCase, self).setUp()
         self.header_name = SERVER_HEADERS.get(self.transfer_server)
 
-
-class DownloadTestCase(object):
     def getClient(self):
         return Client()
 
+
+class DownloadTestCase(object):
     def test_download(self):
         "Download test case for Apache / Lighttpd."
         with Settings(settings, DEBUG=False,
                       TRANSFER_SERVER=self.transfer_server):
             r = self.getClient().get('/download/')
-            # Make sure the correct header is returned.
-            self.assertIn(self.header_name, r)
-            # Ensure no data is returned.
-            self.assertEqual(len(r.content), 0)
-            # Make sure the returned file path exists on disk.
-            self.assertTrue(os.path.exists(r[self.header_name]))
+        # Make sure the correct header is returned.
+        self.assertIn(self.header_name, r)
+        # Ensure no data is returned.
+        self.assertEqual(len(r.content), 0)
+        # Make sure the returned file path exists on disk.
+        self.assertTrue(os.path.exists(r[self.header_name]))
 
     def test_download_debug(self):
         "Download test case for DEBUG == True."
         with Settings(settings, DEBUG=True):
             r = self.getClient().get('/download/')
-            # Ensure we receive the file content
-            self.assertEqual(int(r.content), os.getpid())
+        # Ensure we receive the file content
+        self.assertEqual(int(r.content), os.getpid())
 
 
-class ApacheTestCase(DownloadTestCase, ServerTestCase):
+class UploadTestCase(object):
+    def test_upload_file(self):
+        "Upload test case with real file."
+        t = make_tempfile()
+        data = {
+            'file': open(t, 'r'),
+        }
+        with Settings(settings, DEBUG=False,
+                      TRANSFER_SERVER=self.transfer_server):
+            r = self.getClient().post('/upload/', data)
+        r = json.loads(r.content)
+        self.assertIn('file', r)
+        self.assertEqual(os.getpid(), int(r['file']['data']))
+
+
+class NoneServerTestCase(UploadTestCase, ServerTestCase):
+    def test_download(self):
+        "Download test case when disabled."
+        with Settings(settings, DEBUG=False, TRANSFER_SERVER=Settings.Missing):
+            r = self.getClient().get('/download/')
+        # Ensure we receive the file content
+        self.assertEqual(int(r.content), os.getpid())
+
+
+class BadServerTestCase(UploadTestCase, ServerTestCase):
+    transfer_server = 'foobar'
+
+    def test_download(self):
+        "Download test case when server is invalid."
+        with Settings(settings, DEBUG=False,
+                      TRANSFER_SERVER=self.transfer_server):
+            self.assertRaises(ImproperlyConfigured, self.getClient().get,
+                              '/download/')
+
+
+class ApacheTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
     transfer_server = 'apache'
 
 
-class NginxTestCase(DownloadTestCase, ServerTestCase):
+class NginxTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
     transfer_server = 'nginx'
 
     def test_download(self):
@@ -96,14 +139,15 @@ class NginxTestCase(DownloadTestCase, ServerTestCase):
                       TRANSFER_SERVER=self.transfer_server,
                       TRANSFER_MAPPINGS={'/tmp': '/downloads'}):
             r = self.getClient().get('/download/')
-            # Make sure the correct header is returned.
-            self.assertIn(self.header_name, r)
-            # Ensure no data is returned.
-            self.assertEqual(len(r.content), 0)
-            # Nginx does not deal with absolute paths.
-            self.assertTrue(r[self.header_name].startswith('/downloads'))
-            self.assertTrue(os.path.exists(os.path.join('/tmp',
-                            os.path.basename(r[self.header_name]))))
+        # Make sure the correct header is returned.
+        self.assertIn(self.header_name, r)
+        # Ensure no data is returned.
+        self.assertEqual(len(r.content), 0)
+        # Nginx does not deal with absolute paths. Verify the mapping was done
+        # properly.
+        self.assertTrue(r[self.header_name].startswith('/downloads'))
+        self.assertTrue(os.path.exists(os.path.join('/tmp',
+                        os.path.basename(r[self.header_name]))))
 
     def test_download_no_mappings(self):
         "Download test case for Nginx without mappings."
@@ -115,28 +159,16 @@ class NginxTestCase(DownloadTestCase, ServerTestCase):
             self.assertRaises(ImproperlyConfigured,
                               self.getClient().get, '/download/')
 
-    def test_upload_file(self):
-        "Upload test case with real files."
-        fd, t = tempfile.mkstemp()
-        os.write(fd, str(os.getpid()))
-        os.close(fd)
-        data = {
-            'file': open(t, 'r'),
-        }
-        r = self.getClient().post('/upload/', data)
-        r = json.loads(r.content)
-        self.assertIn('file', r)
-        self.assertEqual(os.getpid(), int(r['file']['data']))
-
     def test_upload_proxy(self):
-        fd, t = tempfile.mkstemp()
-        os.write(fd, str(os.getpid()))
-        os.close(fd)
+        "Upload test case with proxied file."
+        t = make_tempfile()
         data = {
             'file[filename]': 'foobar.png',
             'file[path]': t,
         }
-        r = self.getClient().post('/upload/', data)
+        with Settings(settings, DEBUG=False,
+                      TRANSFER_SERVER=self.transfer_server):
+            r = self.getClient().post('/upload/', data)
         r = json.loads(r.content)
         self.assertIn('file', r)
         self.assertEqual(os.getpid(), int(r['file']['data']))
