@@ -3,6 +3,7 @@ import mimetypes
 
 from urllib import quote
 
+from django.conf import settings
 from django.http import HttpResponse
 from django.core.files.uploadedfile import UploadedFile
 from django.core.exceptions import ImproperlyConfigured
