@@ -1,4 +1,5 @@
 import os
+import shutil
 import mimetypes
 
 from urllib import quote
