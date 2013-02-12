@@ -1,11 +1,15 @@
 import os
+import json
 import tempfile
-from django_transfer.offload import TransferHttpResponse
+
+from django.http import HttpResponse
+
+from django_transfer import TransferHttpResponse
 
 
 def download(request):
     fd, t = tempfile.mkstemp()
-    os.write(os.getpid())
+    os.write(fd, str(os.getpid()))
     os.close(fd)
     return TransferHttpResponse(t)
 
@@ -18,6 +22,5 @@ def upload(request):
                 'size': file.size,
                 'content-type': file.content_type,
             }
-    response = HttpResponse()
-    pprint.pprint(uploads, response)
+    response = HttpResponse(json.dumps(uploads))
     return response

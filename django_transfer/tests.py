@@ -6,99 +6,114 @@ from django.test import TestCase
 from django.test.client import Client
 from django.core.exceptions import ImproperlyConfigured
 
+from django_transfer import settings
+from django_transfer import SERVER_HEADERS
+
 
 MULTIPART = 'multipart/form-data'
 
 
+# Note: I tried using the override_settings() decorator and the
+# TestCase.with_settings() method to manage per-test settings. This however
+# DOES NOT WORK. The reason is that if settings has already been imported,
+# it is untouched. These methods ONLY affect settings imported from the
+# point of their calling onward. This is no help to us since our module
+# imports beforehand. Instead I simply pull settings in from our module
+# and manage changing the settings on THAT.
+
+
+class Settings(object):
+    "Context manager that overrides settings, then restores them."
+    class Missing(object):
+        "A sentinal for a missing setting."
+        pass
+
+    def __init__(self, settings, **kwargs):
+        self.restore = {}
+        self.settings = settings
+        for name, value in kwargs.items():
+            self.restore[name] = getattr(settings, name, Settings.Missing)
+            if value is Settings.Missing:
+                if hasattr(settings, name):
+                    delattr(settings, name)
+            else:
+                setattr(settings, name, value)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        for name, value in self.restore.items():
+            if value is Settings.Missing:
+                if hasattr(self.settings, name):
+                    delattr(self.settings, name)
+            else:
+                setattr(self.settings, name, value)
+
+
 class ServerTestCase(TestCase):
     transfer_server = None
-    old_settings = {}
 
     def setUp(self):
-        self.old_settings = {
-            'TRANSFER_SERVER': settings.TRANSFER_SERVER,
-            'DEBUG': settings.DEBUG,
-        }
-        settings.TRANSFER_SERVER = self.transfer_server
-        settings.DEBUG = False
+        super(ServerTestCase, self).setUp()
+        self.header_name = SERVER_HEADERS.get(self.transfer_server)
 
-    def tearDown(self):
-        for name, value in self.old_settings.items():
-            setattr(settings, name, value)
 
-    def get_client(self):
+class DownloadTestCase(object):
+    def getClient(self):
         return Client()
 
-
-class DownloadTestCase(ServerTestCase):
     def test_download(self):
         "Download test case for Apache / Lighttpd."
-        r = self.get_client().get('/download')
-        # Make sure the correct header is returned.
-        self.assertIn(self.header_name, r.headers)
-        # Ensure no data is returned.
-        self.assertTrue(len(r.content), 0)
-        # Make sure the returned file path exists on disk.
-        self.assertTrue(os.path.exists(r.headers[self.header_name]))
+        with Settings(settings, DEBUG=False,
+                      TRANSFER_SERVER=self.transfer_server):
+            r = self.getClient().get('/download/')
+            # Make sure the correct header is returned.
+            self.assertIn(self.header_name, r)
+            # Ensure no data is returned.
+            self.assertEqual(len(r.content), 0)
+            # Make sure the returned file path exists on disk.
+            self.assertTrue(os.path.exists(r[self.header_name]))
 
     def test_download_debug(self):
         "Download test case for DEBUG == True."
-        debug, settings.DEBUG = settings.DEBUG, True
-        try:
-            r = self.get_client().get('/download')
+        with Settings(settings, DEBUG=True):
+            r = self.getClient().get('/download/')
             # Ensure we receive the file content
             self.assertEqual(int(r.content), os.getpid())
-        finally:
-            settings.DEBUG = debug
 
 
-class ApacheTestCase(DownloadTestCase):
+class ApacheTestCase(DownloadTestCase, ServerTestCase):
     transfer_server = 'apache'
-    header_name = 'X-SendFile'
 
 
-class LighttpdTestCase(DownloadTestCase):
-    transfer_server = 'lighttpd'
-    header_name = 'X-SendFile'
-
-
-class NginxTestCase(ServerTestCase):
+class NginxTestCase(DownloadTestCase, ServerTestCase):
     transfer_server = 'nginx'
-    header_name = 'X-Accel-Redirect'
-
-    def setUp(self):
-        super(NginxTestCase, self).setUp()
-        settings.TRANSFER_MAPPINGS = {
-            '/tmp': '/downloads',
-        }
-
-    def tearDown(self):
-        super(NginxTestCase, self).tearDown()
-        delattr(settings, 'TRANSFER_MAPPINGS')
 
     def test_download(self):
         "Download test case for Nginx."
-        r = self.get_client().get('/download')
-        # Make sure the correct header is returned.
-        self.assertIn(self.header_name, r.headers)
-        # Ensure no data is returned.
-        self.assertTrue(len(r.content), 0)
-        # Nginx does not deal with absolute paths.
-        self.assertTrue(r.headers[self.header_name].startswith('/downloads'))
-        self.assertTrue(os.path.exists(os.path.join('/tmp',
-                        os.path.basename(r.headers[self.header_name]))))
+        with Settings(settings, DEBUG=False,
+                      TRANSFER_SERVER=self.transfer_server,
+                      TRANSFER_MAPPINGS={'/tmp': '/downloads'}):
+            r = self.getClient().get('/download/')
+            # Make sure the correct header is returned.
+            self.assertIn(self.header_name, r)
+            # Ensure no data is returned.
+            self.assertEqual(len(r.content), 0)
+            # Nginx does not deal with absolute paths.
+            self.assertTrue(r[self.header_name].startswith('/downloads'))
+            self.assertTrue(os.path.exists(os.path.join('/tmp',
+                            os.path.basename(r[self.header_name]))))
 
     def test_download_no_mappings(self):
         "Download test case for Nginx without mappings."
-        # Remove the mappings.
-        try:
-            delattr(settings, 'TRANSFER_MAPPINGS')
-        except AttributeError:
-            pass
-        # Without mappings, and server type nginx, we should see an
-        # ImproperlyConfigured exception
-        self.assertRaises(ImproperlyConfigured,
-                          self.get_client().get, '/download')
+        with Settings(settings, DEBUG=False,
+                      TRANSFER_SERVER=self.transfer_server,
+                      TRANSFER_MAPPINGS=Settings.Missing):
+            # Without mappings, and server type nginx, we should see an
+            # ImproperlyConfigured exception
+            self.assertRaises(ImproperlyConfigured,
+                              self.getClient().get, '/download/')
 
     def test_upload_file(self):
         "Upload test case with real files."
@@ -106,9 +121,9 @@ class NginxTestCase(ServerTestCase):
         os.write(fd, str(os.getpid()))
         os.close(fd)
         data = {
-            'file': file(t, 'r'),
+            'file': open(t, 'r'),
         }
-        r = self.get_client().post('/upload', data, content_type=MULTIPART)
+        r = self.getClient().post('/upload/', data)
         r = json.loads(r.content)
         self.assertIn('file', r)
 
@@ -116,6 +131,6 @@ class NginxTestCase(ServerTestCase):
         data = {
             'file[name]': '',
         }
-        r = self.get_client().post('/upload', data, content_type=MULTIPART)
+        r = self.getClient().post('/upload/', data)
         r = json.loads(r.content)
         self.assertIn('file', r)
