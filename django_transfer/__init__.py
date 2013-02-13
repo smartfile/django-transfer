@@ -130,12 +130,12 @@ class TransferMiddleware(object):
                 # Get optional fields. If these are missing, we will try to
                 # determine the value from the temporary file.
                 try:
-                    content_type = int(
-                        request.POST.pop('%s[content_type]' % field))[0]
+                    content_type = request.POST.pop(
+                        '%s[content_type]' % field)[0]
                 except (KeyError, ValueError):
                     content_type = mimetypes.guess_type(name)[0]
                 try:
-                    size = int(request.POST.pop('%s[size]' % field))[0]
+                    size = int(request.POST.pop('%s[size]' % field)[0])
                 except (KeyError, ValueError):
                     size = os.path.getsize(temp)
                 # Now add a new UploadedFile object so that the web application
