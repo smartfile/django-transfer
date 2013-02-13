@@ -106,8 +106,7 @@ class UploadTestCase(object):
                       TRANSFER_SERVER=self.transfer_server):
             r = self.getClient().post('/upload/', data)
         r = json.loads(r.content)
-        self.assertIn('file', r)
-        self.assertEqual(os.getpid(), int(r['file']['data']))
+        self.assertEqual(os.getpid(), int(r['files']['file']['data']))
 
 
 class NoneServerTestCase(UploadTestCase, ServerTestCase):
@@ -163,6 +162,18 @@ class NginxTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
             self.assertRaises(ImproperlyConfigured,
                               self.getClient().get, '/download/')
 
+    def test_upload_field(self):
+        "Upload test with regular fields."
+        data = {
+            'test': 'value',
+            'test[foobar]': 'value',
+        }
+        with Settings(settings, DEBUG=False,
+                      TRANSFER_SERVER=self.transfer_server):
+            r = self.getClient().post('/upload/', data)
+        r = json.loads(r.content)
+        self.assertEqual(data, r['fields'])
+
     def test_upload_proxy(self):
         "Upload test case with proxied file."
         t = make_tempfile()
@@ -174,5 +185,4 @@ class NginxTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
                       TRANSFER_SERVER=self.transfer_server):
             r = self.getClient().post('/upload/', data)
         r = json.loads(r.content)
-        self.assertIn('file', r)
-        self.assertEqual(os.getpid(), int(r['file']['data']))
+        self.assertEqual(os.getpid(), int(r['files']['file']['data']))

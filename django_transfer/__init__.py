@@ -63,6 +63,14 @@ def get_header_value(path):
     return quote(path.encode('utf-8'))
 
 
+def get_fields(data):
+    pass
+
+
+def get_files(data, fields):
+    pass
+
+
 class TransferHttpResponse(HttpResponse):
     def __init__(self, path, mimetype=None, status=None,
                  content_type=None):
@@ -110,7 +118,7 @@ class TransferMiddleware(object):
         # that contain a valid __attribute__ name.
         fields = set()
         for name in request.POST.keys():
-            field, attr = name.split('[', 1)
+            field, bracket, attr = name.partition('[')
             if attr in ('filename]', 'path]', 'size]', 'content_type]'):
                 fields.add(field)
         # If we found any field names that match the expected naming scheme, we

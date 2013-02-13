@@ -15,13 +15,19 @@ def download(request):
 
 
 def upload(request):
-    uploads = {}
+    files, fields = {}, {}
+    echo = {
+        'files': files,
+        'fields': fields,
+    }
     if request.method == 'POST':
         for name, file in request.FILES.items():
-            uploads[name] = {
+            files[name] = {
                 'path': file.name,
                 'size': file.size,
                 'content-type': file.content_type,
                 'data': file.read(),
             }
-    return HttpResponse(json.dumps(uploads), content_type='application/json')
+        for name, value in request.POST.items():
+            fields[name] = value
+    return HttpResponse(json.dumps(echo), content_type='application/json')
