@@ -63,14 +63,6 @@ def get_header_value(path):
     return quote(path.encode('utf-8'))
 
 
-def get_fields(data):
-    pass
-
-
-def get_files(data, fields):
-    pass
-
-
 class TransferHttpResponse(HttpResponse):
     def __init__(self, path, mimetype=None, status=None,
                  content_type=None):
