@@ -7,11 +7,18 @@ from django.http import HttpResponse
 from django_transfer import TransferHttpResponse
 
 
-def download(request):
+def make_tempfile():
+    "Create a temp file, write our PID into it."
     fd, t = tempfile.mkstemp()
-    os.write(fd, str(os.getpid()))
-    os.close(fd)
-    return TransferHttpResponse(t)
+    try:
+        os.write(fd, str(os.getpid()))
+    finally:
+        os.close(fd)
+    return t
+
+
+def download(request):
+    return TransferHttpResponse(make_tempfile())
 
 
 def upload(request):

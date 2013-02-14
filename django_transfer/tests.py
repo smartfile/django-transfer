@@ -8,6 +8,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 from django_transfer import settings
 from django_transfer import SERVER_HEADERS
+from django_transfer.views import make_tempfile
 
 
 MULTIPART = 'multipart/form-data'
@@ -20,14 +21,6 @@ MULTIPART = 'multipart/form-data'
 # point of their calling onward. This is no help to us since our module
 # imports beforehand. Instead I simply pull settings in from our module
 # and manage changing the settings on THAT.
-
-
-def make_tempfile():
-    "Create a temp file, write our PID into it."
-    fd, t = tempfile.mkstemp()
-    os.write(fd, str(os.getpid()))
-    os.close(fd)
-    return t
 
 
 class Settings(object):
