@@ -275,7 +275,6 @@ excluding the (unsafe) filename.
 
 .. _SmartFile: http://www.smartfile.com/
 .. _Read more: http://www.smartfile.com/open-source.html
-.. _Read more: http://www.smartfile.com/open-source.html
 .. _mod_xsendfile: https://tn123.org/mod_xsendfile/
 .. _X-Accel-Redirect: http://wiki.nginx.org/XSendfile
 .. _X-SendFile: http://redmine.lighttpd.net/projects/1/wiki/Docs_ModFastCGI#X-Sendfile
