@@ -1,7 +1,5 @@
 import os
 import json
-import tempfile
-from django.conf import settings
 from django.test import TestCase
 from django.test.client import Client
 from django.core.exceptions import ImproperlyConfigured
