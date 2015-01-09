@@ -22,7 +22,9 @@ setup(
     maintainer_email = 'btimby@gmail.com',
     url = 'http://github.com/smartfile/' + name + '/',
     license = 'MIT',
-    requires = [],
+    requires = [
+        "six>=1.9.0",
+    ],
     packages = [
         "django_transfer",
     ],

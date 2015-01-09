@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import os
 import json
 from django.test import TestCase
@@ -74,7 +76,8 @@ class DownloadTestCase(object):
         # Make sure the correct header is returned.
         self.assertIn(self.header_name, r)
         # Ensure no data is returned.
-        self.assertEqual(len(r.content), 0)
+        content_len = sum(len(chunk) for chunk in r.streaming_content)
+        self.assertEqual(content_len, 0)
         # Make sure the returned file path exists on disk.
         self.assertTrue(os.path.exists(r[self.header_name]))
 
@@ -83,20 +86,22 @@ class DownloadTestCase(object):
         with Settings(settings, DEBUG=True):
             r = self.getClient().get('/download/')
         # Ensure we receive the file content
-        self.assertEqual(int(r.content), os.getpid())
+        content = ''.join(chunk.decode() for chunk in r.streaming_content)
+        self.assertEqual(int(content), os.getpid())
 
 
 class UploadTestCase(object):
     def test_upload_file(self):
         "Upload test case with real file."
         t = make_tempfile()
-        data = {
-            'file': open(t, 'r'),
-        }
-        with Settings(settings, DEBUG=False,
-                      TRANSFER_SERVER=self.transfer_server):
-            r = self.getClient().post('/upload/', data)
-        r = json.loads(r.content)
+        with open(t, 'rb') as file_obj:
+            data = {
+                'file': file_obj,
+            }
+            with Settings(settings, DEBUG=False,
+                          TRANSFER_SERVER=self.transfer_server):
+                r = self.getClient().post('/upload/', data)
+        r = json.loads(r.content.decode())
         self.assertEqual(os.getpid(), int(r['files']['file']['data']))
 
 
@@ -106,7 +111,7 @@ class NoneServerTestCase(UploadTestCase, ServerTestCase):
         with Settings(settings, DEBUG=False, TRANSFER_SERVER=Settings.Missing):
             r = self.getClient().get('/download/')
         # Ensure we receive the file content
-        self.assertEqual(int(r.content), os.getpid())
+        self.assertEqual(int(''.join(chunk.decode() for chunk in r.streaming_content)), os.getpid())
 
 
 class BadServerTestCase(UploadTestCase, ServerTestCase):
@@ -162,7 +167,7 @@ class NginxTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
         with Settings(settings, DEBUG=False,
                       TRANSFER_SERVER=self.transfer_server):
             r = self.getClient().post('/upload/', data)
-        r = json.loads(r.content)
+        r = json.loads(r.content.decode())
         self.assertEqual(data, r['fields'])
 
     def test_upload_proxy(self):
@@ -175,7 +180,7 @@ class NginxTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
         with Settings(settings, DEBUG=False,
                       TRANSFER_SERVER=self.transfer_server):
             r = self.getClient().post('/upload/', data)
-        r = json.loads(r.content)
+        r = json.loads(r.content.decode())
         self.assertEqual(os.getpid(), int(r['files']['file']['data']))
 
     def test_upload_proxy_optional(self):
@@ -190,5 +195,5 @@ class NginxTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
         with Settings(settings, DEBUG=False,
                       TRANSFER_SERVER=self.transfer_server):
             r = self.getClient().post('/upload/', data)
-        r = json.loads(r.content)
+        r = json.loads(r.content.decode())
         self.assertEqual(os.getpid(), int(r['files']['file']['data']))
