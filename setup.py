@@ -1,7 +1,7 @@
 #!/bin/env python
 
 import os
-from distutils.core import setup
+from setuptools import setup
 
 name = 'django-transfer'
 version = '0.2'
