@@ -22,7 +22,7 @@ setup(
     maintainer_email = 'btimby@gmail.com',
     url = 'http://github.com/smartfile/' + name + '/',
     license = 'MIT',
-    requires = [
+    install_requires = [
         "six>=1.9.0",
     ],
     packages = [
@@ -32,7 +32,8 @@ setup(
           'Development Status :: 4 - Beta',
           'Intended Audience :: Developers',
           'Operating System :: OS Independent',
-          'Programming Language :: Python',
+          'Programming Language :: Python :: 2',
+          'Programming Language :: Python :: 3',
           'Topic :: Software Development :: Libraries :: Python Modules',
     ),
 )
