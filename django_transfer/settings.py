@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 # Django settings for django_transfer project.
 
 DEBUG = True

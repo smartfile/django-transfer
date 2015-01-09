@@ -1,0 +1,4 @@
+django_transfer.egg-info/*
+*.pyc
+build/*
+dist/*

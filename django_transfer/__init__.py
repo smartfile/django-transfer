@@ -1,11 +1,16 @@
+from __future__ import unicode_literals
+
 import os
 import shutil
 import mimetypes
 
-from urllib import quote
+from six.moves.urllib.parse import quote
 
 from django.conf import settings
-from django.http import HttpResponse
+try:
+    from django.http import StreamingHttpResponse
+except:
+    from django.http import HttpResponse as StreamingHttpResponse
 from django.core.files.uploadedfile import UploadedFile
 from django.core.exceptions import ImproperlyConfigured
 
@@ -63,7 +68,7 @@ def get_header_value(path):
     return quote(path.encode('utf-8'))
 
 
-class TransferHttpResponse(HttpResponse):
+class TransferHttpResponse(StreamingHttpResponse):
     def __init__(self, path, mimetype=None, status=None,
                  content_type=None):
         if mimetype:
@@ -76,7 +81,7 @@ class TransferHttpResponse(HttpResponse):
             content = ''
         else:
             # Fall back to sending file contents via Django HttpResponse.
-            content = file(path, 'r')
+            content = open(path, 'rb')
         super(TransferHttpResponse, self).__init__(content, status=status,
                                                    content_type=content_type)
         if enabled:
@@ -87,7 +92,7 @@ class TransferHttpResponse(HttpResponse):
 class ProxyUploadedFile(UploadedFile):
     def __init__(self, path, name, content_type, size):
         self.path = path
-        super(ProxyUploadedFile, self).__init__(file(path, 'r'), name, content_type, size)
+        super(ProxyUploadedFile, self).__init__(open(path, 'rb'), name, content_type, size)
 
     def move(self, dst):
         "Closes then moves the file to dst."

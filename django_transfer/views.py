@@ -1,20 +1,20 @@
+from __future__ import unicode_literals
+
 import os
 import json
 import tempfile
 
 from django.http import HttpResponse
+import six
 
 from django_transfer import TransferHttpResponse
 
 
 def make_tempfile():
     "Create a temp file, write our PID into it."
-    fd, t = tempfile.mkstemp()
-    try:
-        os.write(fd, str(os.getpid()))
-    finally:
-        os.close(fd)
-    return t
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp:
+        temp.write(six.text_type(os.getpid()))
+        return temp.name
 
 
 def download(request):
@@ -33,7 +33,7 @@ def upload(request):
                 'path': file.name,
                 'size': file.size,
                 'content-type': file.content_type,
-                'data': file.read(),
+                'data': file.read().decode(),
             }
         for name, value in request.POST.items():
             fields[name] = value

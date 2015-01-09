@@ -1,14 +1,15 @@
 #!/bin/env python
 
 import os
-from distutils.core import setup
+from setuptools import setup
 
 name = 'django-transfer'
 version = '0.2'
 release = '2'
 versrel = version + '-' + release
 readme = os.path.join(os.path.dirname(__file__), 'README.rst')
-long_description = file(readme).read()
+with open(readme) as readme_file:
+    long_description = readme_file.read()
 
 setup(
     name = name,
@@ -21,7 +22,9 @@ setup(
     maintainer_email = 'btimby@gmail.com',
     url = 'http://github.com/smartfile/' + name + '/',
     license = 'MIT',
-    requires = [],
+    install_requires = [
+        "six>=1.9.0",
+    ],
     packages = [
         "django_transfer",
     ],
@@ -29,7 +32,8 @@ setup(
           'Development Status :: 4 - Beta',
           'Intended Audience :: Developers',
           'Operating System :: OS Independent',
-          'Programming Language :: Python',
+          'Programming Language :: Python :: 2',
+          'Programming Language :: Python :: 3',
           'Topic :: Software Development :: Libraries :: Python Modules',
     ),
 )
