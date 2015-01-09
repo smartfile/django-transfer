@@ -141,7 +141,8 @@ class NginxTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
         # Make sure the correct header is returned.
         self.assertIn(self.header_name, r)
         # Ensure no data is returned.
-        self.assertEqual(len(r.content), 0)
+        content_len = sum(len(chunk) for chunk in r.streaming_content)
+        self.assertEqual(content_len, 0)
         # Nginx does not deal with absolute paths. Verify the mapping was done
         # properly.
         self.assertTrue(r[self.header_name].startswith('/downloads'))
