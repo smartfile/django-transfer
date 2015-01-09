@@ -7,7 +7,10 @@ import mimetypes
 from six.moves.urllib.parse import quote
 
 from django.conf import settings
-from django.http import StreamingHttpResponse
+try:
+    from django.http import StreamingHttpResponse
+except:
+    from django.http import HttpResponse as StreamingHttpResponse
 from django.core.files.uploadedfile import UploadedFile
 from django.core.exceptions import ImproperlyConfigured
 

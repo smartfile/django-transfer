@@ -52,6 +52,14 @@ class Settings(object):
                 setattr(self.settings, name, value)
 
 
+def get_content(response):
+    "Handle the incompatibilities between Django <=1.4 and 1.5+"
+    try:
+        return ''.join(chunk.decode() for chunk in response.streaming_content)
+    except AttributeError:
+        return response.content
+
+
 class ServerTestCase(TestCase):
     transfer_server = None
 
@@ -76,8 +84,7 @@ class DownloadTestCase(object):
         # Make sure the correct header is returned.
         self.assertIn(self.header_name, r)
         # Ensure no data is returned.
-        content_len = sum(len(chunk) for chunk in r.streaming_content)
-        self.assertEqual(content_len, 0)
+        self.assertEqual(len(get_content(r)), 0)
         # Make sure the returned file path exists on disk.
         self.assertTrue(os.path.exists(r[self.header_name]))
 
@@ -86,8 +93,7 @@ class DownloadTestCase(object):
         with Settings(settings, DEBUG=True):
             r = self.getClient().get('/download/')
         # Ensure we receive the file content
-        content = ''.join(chunk.decode() for chunk in r.streaming_content)
-        self.assertEqual(int(content), os.getpid())
+        self.assertEqual(int(get_content(r)), os.getpid())
 
 
 class UploadTestCase(object):
@@ -111,7 +117,7 @@ class NoneServerTestCase(UploadTestCase, ServerTestCase):
         with Settings(settings, DEBUG=False, TRANSFER_SERVER=Settings.Missing):
             r = self.getClient().get('/download/')
         # Ensure we receive the file content
-        self.assertEqual(int(''.join(chunk.decode() for chunk in r.streaming_content)), os.getpid())
+        self.assertEqual(int(get_content(r)), os.getpid())
 
 
 class BadServerTestCase(UploadTestCase, ServerTestCase):
@@ -141,8 +147,7 @@ class NginxTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
         # Make sure the correct header is returned.
         self.assertIn(self.header_name, r)
         # Ensure no data is returned.
-        content_len = sum(len(chunk) for chunk in r.streaming_content)
-        self.assertEqual(content_len, 0)
+        self.assertEqual(len(get_content(r)), 0)
         # Nginx does not deal with absolute paths. Verify the mapping was done
         # properly.
         self.assertTrue(r[self.header_name].startswith('/downloads'))
