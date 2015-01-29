@@ -31,3 +31,5 @@ before_script:
   - make verify
 script:
   - make test
+notifications:
+  slack: smartfile:tbDIPzVJIPBpSz29kQw6b8RQ
