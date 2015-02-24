@@ -24,11 +24,7 @@ matrix:
       env: DJANGO=1.4
 install:
   - pip install --timeout=30 -q Django==$DJANGO
-  - pip install --timeout=30 pep8
-  - pip install --timeout=30 pyflakes
   - pip install --timeout=30 -q -e .
-before_script:
-  - make verify
 script:
   - make test
 notifications:
