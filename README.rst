@@ -35,13 +35,13 @@ django-transfer integrates with:
 - `mod_upload`_ for Nginx
 
 The first three of the above allow the web application to emit a header
-instructing the content server  to transfer a file to the HTTP client.
+instructing the content server to transfer a file to the HTTP client.
 This way, the web app still receives the download request, performs any
 checks required, and sends a header instead of the actual file contents.
 
 The last, `mod_upload`_ does something similar, but for file UPLOADS.
 mod_upload will receive files POSTed to the server and save them off
-to temporary files. It will the forward the request to the web
+to temporary files. It will then forward the request to the web
 application, replacing the file bodies with paths to the temporary files
 containing them.
 
