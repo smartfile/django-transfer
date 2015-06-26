@@ -43,10 +43,13 @@ def get_header_name():
 
 
 def is_enabled():
-    if settings.DEBUG:
-        return False
+    if not hasattr(settings, 'ENABLE_TRANSFER'):
+        if settings.DEBUG:
+            return false
+
     if getattr(settings, 'TRANSFER_SERVER', None) is None:
         return False
+
     return True
 
 
