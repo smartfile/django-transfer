@@ -129,28 +129,33 @@ class TransferMiddleware(object):
             request.POST._mutable, request.FILES._mutable = True, True
             for field in fields:
                 # Get required fields. If these are missing, we will fail.
+                data = []
                 try:
-                    name = request.POST.pop('%s[filename]' % field)[0]
-                    temp = request.POST.pop('%s[path]' % field)[0]
+                    fields = enumerate(zip(request.POST.pop('%s[filename]' % field), request.POST.pop('%s[path]' % field)))
                 except KeyError:
                     raise Exception('Missing required field "%s", please '
                                     'configure mod_upload properly')
                 # Get optional fields. If these are missing, we will try to
                 # determine the value from the temporary file.
                 try:
-                    content_type = request.POST.pop(
-                        '%s[content_type]' % field)[0]
+                    content_types = dict(enumerate(request.POST.pop('%s[content_type]' % field)))
                 except (KeyError, ValueError):
-                    content_type = mimetypes.guess_type(name)[0]
+                    content_types = {}
                 try:
-                    size = int(request.POST.pop('%s[size]' % field)[0])
+                    sizes = dict((request.POST.pop('%s[size]' % field)))
                 except (KeyError, ValueError):
-                    size = os.path.getsize(temp)
+                    sizes = {}
+                # Iterating over possible multiple files
+                for i, (name, temp) in fields:
+                    content_type = content_types[i] if i in content_types else mimetypes.guess_type(name)[0]
+                    size = sizes[i] if i in sizes else os.path.getsize(temp)
+                    data.append(ProxyUploadedFile(temp, name, content_type, size))
                 # Now add a new UploadedFile object so that the web application
                 # can handle these "files" that were uploaded in the same
                 # fashion as a regular file upload.
-                request.FILES[field] = ProxyUploadedFile(temp, name,
-                                                         content_type, size)
+                if not data:
+                    continue
+                request.FILES.setlist(field, data)
             # We are done modifying these objects, make them immutable once
             # again.
             request.POST._mutable, request.FILES._mutable = False, False
