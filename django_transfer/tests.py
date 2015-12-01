@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+from tempfile import gettempdir
 
 import os
 import json
@@ -142,7 +143,7 @@ class NginxTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
         "Download test case for Nginx."
         with Settings(settings, DEBUG=False,
                       TRANSFER_SERVER=self.transfer_server,
-                      TRANSFER_MAPPINGS={'/tmp': '/downloads'}):
+                      TRANSFER_MAPPINGS={gettempdir(): '/downloads'}):
             r = self.getClient().get('/download/')
         # Make sure the correct header is returned.
         self.assertIn(self.header_name, r)
@@ -151,7 +152,7 @@ class NginxTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
         # Nginx does not deal with absolute paths. Verify the mapping was done
         # properly.
         self.assertTrue(r[self.header_name].startswith('/downloads'))
-        self.assertTrue(os.path.exists(os.path.join('/tmp',
+        self.assertTrue(os.path.exists(os.path.join(gettempdir(),
                         os.path.basename(r[self.header_name]))))
 
     def test_download_no_mappings(self):
@@ -203,3 +204,56 @@ class NginxTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
             r = self.getClient().post('/upload/', data)
         r = json.loads(r.content.decode())
         self.assertEqual(os.getpid(), int(r['files']['file']['data']))
+
+    def test_upload_proxy_multiple(self):
+        "Upload test case with proxied file."
+        foo = make_tempfile('foo')
+        bar = make_tempfile('bar')
+        data = {
+            'file[filename]': ['foo.png', 'bar.png'],
+            'file[path]': [foo, bar],
+        }
+        with Settings(settings, DEBUG=False,
+                      TRANSFER_SERVER=self.transfer_server):
+            r = self.getClient().post('/upload/', data)
+        r = json.loads(r.content.decode())
+        self.assertDictEqual({
+            'path': 'foo.png',
+            'size': 3,
+            'content-type': 'image/png',
+            'data': 'foo'
+        }, r['files']['file'][0])
+        self.assertDictEqual({
+            'path': 'bar.png',
+            'size': 3,
+            'content-type': 'image/png',
+            'data': 'bar'
+        }, r['files']['file'][1])
+
+    def test_upload_proxy_optional_multiple(self):
+        "Upload test case with proxied file."
+        foo = make_tempfile('foo')
+        bar = make_tempfile('bar')
+        data = {
+            'file[filename]': ['foo.png', 'bar.png'],
+            'file[path]': [foo, bar],
+            'file[content_type]': ['image/png'] * 2,
+            'file[size]': [os.path.getsize(foo), os.path.getsize(bar)],
+        }
+        with Settings(settings, DEBUG=False,
+                      TRANSFER_SERVER=self.transfer_server):
+            r = self.getClient().post('/upload/', data)
+        r = json.loads(r.content.decode())
+
+        self.assertDictEqual({
+            'path': 'foo.png',
+            'size': 3,
+            'content-type': 'image/png',
+            'data': 'foo'
+        }, r['files']['file'][0])
+        self.assertDictEqual({
+            'path': 'bar.png',
+            'size': 3,
+            'content-type': 'image/png',
+            'data': 'bar'
+        }, r['files']['file'][1])
