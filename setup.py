@@ -4,16 +4,14 @@ import os
 from setuptools import setup
 
 name = 'django-transfer'
-version = '0.2'
-release = '2'
-versrel = version + '-' + release
+version = '0.3'
 readme = os.path.join(os.path.dirname(__file__), 'README.rst')
 with open(readme) as readme_file:
     long_description = readme_file.read()
 
 setup(
     name = name,
-    version = versrel,
+    version = version,
     description = 'A django application that offloads file transfers to a downstream proxy.',
     long_description = long_description,
     author = 'SmartFile',
