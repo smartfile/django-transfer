@@ -285,14 +285,14 @@ excluding the (unsafe) filename.
 Compatability
 -------------
 
-Python      | 2.7 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6
------------ | --- | --- | --- | --- | --- | --- | ---
-Django-1.4  |  O  |  O  |  O  |  O  |  O  |  O  |  O
-Django-1.5  |  O  |  O  |  O  |  O  |  O  |  O  |  O
-Django-1.6  |  O  |  O  |  O  |  O  |  O  |  O  |  O
-Django-1.7  |  O  |  O  |  O  |  O  |  O  |  O  |  O
-Django-1.8  |  O  |  O  |  O  |  O  |  O  |  O  |  O
-Django-1.9  |  O  |  O  |  O  |  O  |  O  |  O  |  O
-Django-1.10 |  O  |  O  |  O  |  O  |  O  |  O  |  O
-Django-1.11 |  O  |  O  |  O  |  O  |  O  |  O  |  O
+| Python      | 2.7 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6 |
+| ----------- | --- | --- | --- | --- | --- | --- | --- |
+| Django-1.4  |  O  |  O  |  O  |  O  |  O  |  O  |  O  |
+| Django-1.5  |  O  |  O  |  O  |  O  |  O  |  O  |  O  |
+| Django-1.6  |  O  |  O  |  O  |  O  |  O  |  O  |  O  |
+| Django-1.7  |  O  |  O  |  O  |  O  |  O  |  O  |  O  |
+| Django-1.8  |  O  |  O  |  O  |  O  |  O  |  O  |  O  |
+| Django-1.9  |  O  |  O  |  O  |  O  |  O  |  O  |  O  |
+| Django-1.10 |  O  |  O  |  O  |  O  |  O  |  O  |  O  |
+| Django-1.11 |  O  |  O  |  O  |  O  |  O  |  O  |  O  |
 
