@@ -13,6 +13,10 @@ except:
     from django.http import HttpResponse as StreamingHttpResponse
 from django.core.files.uploadedfile import UploadedFile
 from django.core.exceptions import ImproperlyConfigured
+try:
+    from django.utils.deprecation import MiddlewareMixin
+except ImportError:
+    MiddlewareMixin = object
 
 
 SERVER_APACHE = 'apache'
@@ -103,7 +107,7 @@ class ProxyUploadedFile(UploadedFile):
         shutil.move(self.path, dst)
 
 
-class TransferMiddleware(object):
+class TransferMiddleware(MiddlewareMixin):
     def process_request(self, request):
         if request.method != 'POST':
             return
