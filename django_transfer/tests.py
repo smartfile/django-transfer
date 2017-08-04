@@ -96,6 +96,14 @@ class DownloadTestCase(object):
         # Ensure we receive the file content
         self.assertEqual(int(get_content(r)), os.getpid())
 
+    def test_download_custom_header(self):
+        "Download test case for TRANSFER_HEADER == Foobar"
+        with Settings(settings, DEBUG=False, TRANSFER_HEADER="Foobar",
+                      TRANSFER_SERVER=self.transfer_server):
+            r = self.getClient().get('/download/')
+        # Ensure the header is Foobar.
+        self.assertIn("Foobar", r)
+
 
 class UploadTestCase(object):
     def test_upload_file(self):
@@ -154,6 +162,15 @@ class NginxTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
         self.assertTrue(r[self.header_name].startswith('/downloads'))
         self.assertTrue(os.path.exists(os.path.join(gettempdir(),
                         os.path.basename(r[self.header_name]))))
+
+    def test_download_custom_header(self):
+        "Download test case for TRANSFER_HEADER == Foobar"
+        with Settings(settings, DEBUG=False, TRANSFER_HEADER="Foobar",
+                      TRANSFER_SERVER=self.transfer_server,
+                      TRANSFER_MAPPINGS={gettempdir(): '/downloads'}):
+            r = self.getClient().get('/download/')
+        # Ensure the header is Foobar.
+        self.assertIn("Foobar", r)
 
     def test_download_no_mappings(self):
         "Download test case for Nginx without mappings."

@@ -38,6 +38,12 @@ def get_server_name():
 
 
 def get_header_name():
+    # Allow user to customize.
+    try:
+        return settings.TRANSFER_HEADER
+    except AttributeError:
+        pass
+    # Otherwise the header depends on the configured server type.
     server_name = get_server_name()
     try:
         return SERVER_HEADERS[server_name]
