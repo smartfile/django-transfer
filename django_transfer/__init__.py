@@ -158,7 +158,7 @@ class TransferMiddleware(MiddlewareMixin):
                 # Iterating over possible multiple files
                 for i, (name, temp) in fields:
                     content_type = content_types[i] if i in content_types else mimetypes.guess_type(name)[0]
-                    size = sizes[i] if i in sizes else os.path.getsize(temp)
+                    size = int(sizes[i]) if i in sizes else os.path.getsize(temp)
                     data.append(ProxyUploadedFile(temp, name, content_type, size))
                 # Now add a new UploadedFile object so that the web application
                 # can handle these "files" that were uploaded in the same
