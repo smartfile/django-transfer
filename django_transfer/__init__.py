@@ -149,11 +149,11 @@ class TransferMiddleware(MiddlewareMixin):
                 # determine the value from the temporary file.
                 try:
                     content_types = dict(enumerate(request.POST.pop('%s[content_type]' % field)))
-                except (KeyError, ValueError):
+                except KeyError:
                     content_types = {}
                 try:
-                    sizes = dict((request.POST.pop('%s[size]' % field)))
-                except (KeyError, ValueError):
+                    sizes = dict(enumerate(request.POST.pop('%s[size]' % field)))
+                except KeyError:
                     sizes = {}
                 # Iterating over possible multiple files
                 for i, (name, temp) in fields:
