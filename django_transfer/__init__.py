@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import os
 import shutil
 import mimetypes
+import logging
 
 from six.moves.urllib.parse import quote
 
@@ -13,11 +14,16 @@ except:
     from django.http import HttpResponse as StreamingHttpResponse
 from django.core.files.uploadedfile import UploadedFile
 from django.core.exceptions import ImproperlyConfigured
+from django.http.multipartparser import MultiPartParserError
+
 try:
     from django.utils.deprecation import MiddlewareMixin
 except ImportError:
     MiddlewareMixin = object
 
+
+LOGGER = logging.getLogger(__name__)
+LOGGER.addHandler(logging.NullHandler())
 
 SERVER_APACHE = 'apache'
 SERVER_NGINX = 'nginx'
@@ -125,7 +131,13 @@ class TransferMiddleware(MiddlewareMixin):
         # multipart/form-data.
         if method != 'POST':
             request.method = 'POST'
-            request._load_post_and_files()
+            try:
+                # There is a fair chance this will fail. If it does, log the
+                # error and move on.
+                request._load_post_and_files()
+            except MultiPartParserError:
+                LOGGER.info('Error attempting to parse non-POST data',
+                            exc_info=True)
             # Don't forget to restore the method.
             request.method = method
         if not is_enabled():
