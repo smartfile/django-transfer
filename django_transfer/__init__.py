@@ -29,6 +29,9 @@ SERVER_HEADERS = {
     SERVER_LIGHTTPD: 'X-SendFile',
 }
 
+# Default to POST method only. Can be overridden in settings.
+UPLOAD_METHODS = settings.TRANSFER_UPLOAD_METHODS or ['POST']
+
 
 def get_server_name():
     try:
@@ -115,7 +118,7 @@ class ProxyUploadedFile(UploadedFile):
 
 class TransferMiddleware(MiddlewareMixin):
     def process_request(self, request):
-        if request.method != 'POST':
+        if request.method not in UPLOAD_METHODS:
             return
         if not is_enabled():
             return
