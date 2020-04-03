@@ -132,14 +132,17 @@ class TransferMiddleware(MiddlewareMixin):
         if method != 'POST':
             request.method = 'POST'
             try:
-                # There is a fair chance this will fail. If it does, log the
-                # error and move on.
-                request._load_post_and_files()
+                try:
+                    # There is a fair chance this will fail. If it does, log
+                    # the error and move on.
+                    request._load_post_and_files()
+                finally:
+                    # Don't forget to restore the method.
+                    request.method = method
             except MultiPartParserError:
                 LOGGER.info('Error attempting to parse non-POST data',
                             exc_info=True)
-            # Don't forget to restore the method.
-            request.method = method
+                return
         if not is_enabled():
             return
         if get_server_name() != SERVER_NGINX:
