@@ -207,6 +207,20 @@ class NginxTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
         r = json.loads(r.content.decode())
         self.assertEqual(os.getpid(), int(r['files']['file']['data']))
 
+    def test_upload_proxy_patch(self):
+        "Upload test case with proxied file."
+        t = make_tempfile()
+        data = {
+            'file[filename]': 'foobar.png',
+            'file[path]': t,
+        }
+        with Settings(settings, DEBUG=False,
+                      TRANSFER_SERVER=self.transfer_server,
+                      TRANSFER_UPLOAD_METHODS=['PATCH']):
+            r = self.getClient().patch('/upload/', data)
+        r = json.loads(r.content.decode())
+        self.assertEqual(os.getpid(), int(r['files']['file']['data']))
+
     def test_upload_proxy_optional(self):
         "Upload test case with proxied file."
         t = make_tempfile()
