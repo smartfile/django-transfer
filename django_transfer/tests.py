@@ -3,6 +3,10 @@ from tempfile import gettempdir
 
 import os
 import json
+
+from unittest import skipIf
+
+import django
 from django.test import TestCase
 from django.test.client import Client
 from django.core.exceptions import ImproperlyConfigured
@@ -207,6 +211,7 @@ class NginxTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
         r = json.loads(r.content.decode())
         self.assertEqual(os.getpid(), int(r['files']['file']['data']))
 
+    @unittest.skipIf(django.VERSION[:2] < [1, 6], 'no Client.patch()')
     def test_upload_proxy_patch(self):
         "Upload test case with proxied file."
         t = make_tempfile()
