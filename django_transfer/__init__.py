@@ -127,6 +127,10 @@ class TransferMiddleware(MiddlewareMixin):
         method = request.method
         if method not in UPLOAD_METHODS:
             return
+        if not is_enabled():
+            return
+        if get_server_name() != SERVER_NGINX:
+            return
         # If enabled for other methods, masquerade as POST to allow parsing
         # multipart/form-data.
         if method != 'POST':
@@ -143,10 +147,6 @@ class TransferMiddleware(MiddlewareMixin):
                 LOGGER.info('Error attempting to parse non-POST data',
                             exc_info=True)
                 return
-        if not is_enabled():
-            return
-        if get_server_name() != SERVER_NGINX:
-            return
         # Find uploads in request.POST and copy them to request.FILES. Such
         # fields are expected to be named as:
         # __original_field_name__[__attribute__]
