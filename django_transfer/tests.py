@@ -221,9 +221,12 @@ class NginxTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
         }
         with Settings(settings, DEBUG=False,
                       TRANSFER_SERVER=self.transfer_server):
+            # Patch method does not encode or decode form data. We encode
+            # manually.
             r = self.getClient().patch('/upload/',
                                         encode_multipart('--foo-', data),
-                                        content_type='multipart/form-data; boundary=--foo-')
+                                        content_type='multipart/form-data; '
+                                                     'boundary=--foo-')
         r = json.loads(r.content.decode())
         self.assertEqual(os.getpid(), int(r['files']['file']['data']))
 

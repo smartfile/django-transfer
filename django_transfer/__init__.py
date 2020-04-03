@@ -121,7 +121,8 @@ class TransferMiddleware(MiddlewareMixin):
         method = request.method
         if method not in UPLOAD_METHODS:
             return
-        # If enabled for other methods, parse the multipart/form-data.
+        # If enabled for other methods, masquerade as POST to allow parsing
+        # multipart/form-data.
         if method != 'POST':
             request.method = 'POST'
             request._load_post_and_files()
