@@ -8,7 +8,7 @@ from unittest import skipIf
 
 import django
 from django.test import TestCase
-from django.test.client import Client
+from django.test.client import Client, encode_multipart
 from django.core.exceptions import ImproperlyConfigured
 
 from django_transfer import settings
@@ -211,7 +211,7 @@ class NginxTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
         r = json.loads(r.content.decode())
         self.assertEqual(os.getpid(), int(r['files']['file']['data']))
 
-    @unittest.skipIf(django.VERSION[:2] < [1, 6], 'no Client.patch()')
+    @skipIf(django.VERSION[:2] < (1, 6), 'no Client.patch()')
     def test_upload_proxy_patch(self):
         "Upload test case with proxied file."
         t = make_tempfile()
@@ -220,9 +220,10 @@ class NginxTestCase(DownloadTestCase, UploadTestCase, ServerTestCase):
             'file[path]': t,
         }
         with Settings(settings, DEBUG=False,
-                      TRANSFER_SERVER=self.transfer_server,
-                      TRANSFER_UPLOAD_METHODS=['PATCH']):
-            r = self.getClient().patch('/upload/', data)
+                      TRANSFER_SERVER=self.transfer_server):
+            r = self.getClient().patch('/upload/',
+                                        encode_multipart('--foo-', data),
+                                        content_type='multipart/form-data; boundary=--foo-')
         r = json.loads(r.content.decode())
         self.assertEqual(os.getpid(), int(r['files']['file']['data']))
 

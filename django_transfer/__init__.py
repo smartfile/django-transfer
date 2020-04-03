@@ -30,7 +30,7 @@ SERVER_HEADERS = {
 }
 
 # Default to POST method only. Can be overridden in settings.
-UPLOAD_METHODS = settings.TRANSFER_UPLOAD_METHODS or ['POST']
+UPLOAD_METHODS = settings.TRANSFER_UPLOAD_METHODS or ('POST',)
 
 
 def get_server_name():
@@ -118,8 +118,15 @@ class ProxyUploadedFile(UploadedFile):
 
 class TransferMiddleware(MiddlewareMixin):
     def process_request(self, request):
-        if request.method not in UPLOAD_METHODS:
+        method = request.method
+        if method not in UPLOAD_METHODS:
             return
+        # If enabled for other methods, parse the multipart/form-data.
+        if method != 'POST':
+            request.method = 'POST'
+            request._load_post_and_files()
+            # Don't forget to restore the method.
+            request.method = method
         if not is_enabled():
             return
         if get_server_name() != SERVER_NGINX:
