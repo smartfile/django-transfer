@@ -36,7 +36,7 @@ SERVER_HEADERS = {
 }
 
 # Default to POST method only. Can be overridden in settings.
-UPLOAD_METHODS = settings.TRANSFER_UPLOAD_METHODS or ('POST',)
+UPLOAD_METHODS = getattr(settings, 'TRANSFER_UPLOAD_METHODS', ('POST',))
 
 
 def get_server_name():
