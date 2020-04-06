@@ -74,7 +74,7 @@ TEMPLATE_LOADERS = (
     # 'django.template.loaders.eggs.Loader',
 )
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -84,6 +84,9 @@ MIDDLEWARE_CLASSES = (
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_transfer.TransferMiddleware',
 )
+
+# For older Django versions
+MIDDLEWARE_CLASSES = MIDDLEWARE
 
 ROOT_URLCONF = 'django_transfer.urls'
 
@@ -106,3 +109,7 @@ INSTALLED_APPS = (
 )
 
 TRANSFER_SERVER = 'apache'
+
+# We test using PATCH method. Please understand how django-transfer mutilates
+# request handling before you enable it for other methods.
+TRANSFER_UPLOAD_METHODS = ('POST', 'PATCH')

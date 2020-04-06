@@ -4,6 +4,7 @@ import os
 import json
 import tempfile
 
+from django.conf import settings
 from django.http import HttpResponse
 import six
 
@@ -27,7 +28,7 @@ def upload(request):
         'files': files,
         'fields': fields,
     }
-    if request.method == 'POST':
+    if request.method in settings.TRANSFER_UPLOAD_METHODS:
         for name in request.FILES.keys():
             data = request.FILES.getlist(name)
             if len(data) == 1:
