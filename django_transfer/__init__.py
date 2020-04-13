@@ -82,12 +82,12 @@ def check_acl(path):
     if white:
         allow = False
         for pattern in white:
-            if re.fullmatch(pattern, path):
+            if re.match(pattern, path):
                 allow = True
                 break
     if black:
         for pattern in black:
-            if re.fullmatch(pattern, path):
+            if re.match(pattern, path):
                 allow = False
                 break
     return allow
