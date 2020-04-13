@@ -39,7 +39,7 @@ SERVER_HEADERS = {
 # Default to POST method only. Can be overridden in settings.
 UPLOAD_METHODS = getattr(settings, 'TRANSFER_UPLOAD_METHODS', ('POST',))
 # Default to whitelist all paths.
-UPLOAD_ACL = getattr(settings, 'TRANSFER_UPLOAD_ACL', ((r'.*',), ()))
+UPLOAD_ACL = getattr(settings, 'TRANSFER_UPLOAD_ACL', ((), ()))
 
 
 def get_server_name():
