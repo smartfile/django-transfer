@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import os
+import re
 import shutil
 import mimetypes
 import logging
@@ -37,6 +38,8 @@ SERVER_HEADERS = {
 
 # Default to POST method only. Can be overridden in settings.
 UPLOAD_METHODS = getattr(settings, 'TRANSFER_UPLOAD_METHODS', ('POST',))
+# Default to whitelist all paths.
+UPLOAD_ACL = getattr(settings, 'TRANSFER_UPLOAD_ACL', ((), ()))
 
 
 def get_server_name():
@@ -70,6 +73,24 @@ def is_enabled():
         return False
 
     return True
+
+
+def check_acl(path):
+    path = path.lstrip('/')
+    white, black = UPLOAD_ACL
+    allow = True
+    if white:
+        allow = False
+        for pattern in white:
+            if re.match(pattern, path):
+                allow = True
+                break
+    if black:
+        for pattern in black:
+            if re.match(pattern, path):
+                allow = False
+                break
+    return allow
 
 
 def get_header_value(path):
@@ -128,6 +149,8 @@ class TransferMiddleware(MiddlewareMixin):
         if method not in UPLOAD_METHODS:
             return
         if not is_enabled():
+            return
+        if not check_acl(request.path):
             return
         if get_server_name() != SERVER_NGINX:
             return

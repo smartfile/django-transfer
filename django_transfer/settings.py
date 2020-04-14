@@ -113,3 +113,11 @@ TRANSFER_SERVER = 'apache'
 # We test using PATCH method. Please understand how django-transfer mutilates
 # request handling before you enable it for other methods.
 TRANSFER_UPLOAD_METHODS = ('POST', 'PATCH')
+
+# url patterns to whitelist / blacklist upload handling.
+TRANSFER_UPLOAD_ACL = (
+    # Whitelist
+    (r'^upload/$',),
+    # Blacklist
+    ()
+)
